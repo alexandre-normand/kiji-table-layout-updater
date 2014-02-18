@@ -1,0 +1,35 @@
+@namespace("com.opower.updater")
+protocol LayoutUpdates {
+
+  /**
+   * Table layout update information.
+   */
+  record LayoutUpdate {
+
+    /**
+     * The update id. This is unique per table.
+     */
+    union { null, int } updateId;
+
+    /**
+     * The validation function version. This provides the option of evolving the validation function in the future.
+     *
+     * This is needed when the current layout must be checked with the same validation function it was originally
+     * checked against to make sure it was not altered before applying the next update.
+     */
+    int validationFunctionVersion;
+
+    /**
+     * The checksum after the update has been applied. This is to ensure that no modifications were performed on
+     * the layout between two updates. This checksum value is obtained by applying the validation function
+     * on the updated table layout making sure that the resulting layout is the expected one.
+     */
+    string checksum;
+
+    /**
+     * The applied DDL. Useful for troubleshooting.
+     */
+    string appliedDDL;
+
+  }
+}

@@ -1,0 +1,5 @@
+com.opower.updater.UpdaterCreateTool
+com.opower.updater.UpdaterInstallTool
+com.opower.updater.UpdaterUpdateTool
+com.opower.updater.UpdaterDropTool
+com.opower.updater.UpdaterHistoryTool
