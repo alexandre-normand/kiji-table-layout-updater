@@ -28,3 +28,10 @@ If the execution of one of the update fails, the whole update process is aborted
 If the failing update contained more than one DDL statement, the table might have to be manually
 rolled back if some of the statement were executed. Thus, it is recommended that each update file contains
 only a single DDL statement.
+
+It is also worth noting that when running DDL statements on a kiji table, kiji will automatically generate a new
+layout-id for the resulting table layout. Controlling this layout-id is important because kiji often does valiation
+on the layout-id prior to performing some operations. For that reason, after applying all the updates (either with
+the updater-create or updater-update tools), the tool will set the table layout-id to a known value
+`<table-name>-layout-id-<last-update-id>`. If this feature is not needed, this can be disabled using the `--set-layout-id=false`
+option.

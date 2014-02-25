@@ -14,6 +14,7 @@ import com.opower.updater.operation.TableUpdater;
 import com.opower.updater.operation.UpdateException;
 import org.kiji.schema.Kiji;
 import org.kiji.schema.KijiURI;
+import org.kiji.schema.avro.TableLayoutDesc;
 import org.kiji.schema.shell.api.Client;
 import org.kiji.schema.util.ToJson;
 
@@ -139,6 +140,27 @@ public abstract class BaseUpdaterTableTool extends BaseUpdaterTool {
         }
     }
 
+    /**
+     * Set the layout-id of the table based on the given update result.
+     *
+     * @param result An update result.
+     * @throws IOException
+     */
+    protected void setLayoutIdAfterUpdate(TableUpdater.UpdateResult result) throws IOException {
+        try {
+            final TableLayoutDesc desc = kiji.getMetaTable().getTableLayout(getKijiTableName()).getDesc();
+            final String previousLayoutId = desc.getLayoutId();
+            final String layoutId = String.format("%s-layout-id-%s", getKijiTableName(), result.getIdOfTheLastUpdateApplied());
+            desc.setLayoutId(layoutId);
+            desc.setReferenceLayout(previousLayoutId);
+            kiji.modifyTableLayout(desc);
+            getPrintStream().println(String.format("Table '%s' new layout id is '%s'", getKijiTableName(), layoutId));
+        }
+        catch (IOException ex) {
+            getPrintStream().println(String.format("Error: Could not update the kiji table layout id. %s", ex));
+        }
+    }
+
     private void autoUpdateLayoutUpdateTable(Kiji kiji,
                                              KijiLayoutUpdateTable layoutUpdateTable,
                                              DDLRunner kijiDDLRunner) throws IOException {
@@ -149,7 +171,6 @@ public abstract class BaseUpdaterTableTool extends BaseUpdaterTool {
                         false);
     }
 
-
     private String generateUpdateErrorReport(Kiji kiji, UpdateException updateException) throws IOException {
         return "Problematic update DDL is: \n"
                 + updateException.getFailedUpdate().getDDL()
@@ -157,6 +178,4 @@ public abstract class BaseUpdaterTableTool extends BaseUpdaterTool {
                 + "Table " + updateException.getTableName() + " current layout is:\n"
                 + ToJson.toJsonString(kiji.getMetaTable().getTableLayout(updateException.getTableName()).getDesc());
     }
-
-
 }
