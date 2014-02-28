@@ -26,6 +26,11 @@ public class UpdaterUpdateTool extends BaseUpdaterTableTool {
     private String bootstrapFlag = null;
     private Boolean bootstrap = false;
 
+    @Flag(name = "set-layout-id", usage = "Use this option to have the tool set the table layout-id to the last" +
+            "update id or not after a successful kiji-table-updater run. The default is 'true'.")
+    private String setLayoutIdFlag = null;
+    private Boolean setLayoutId = true;
+
     public UpdaterUpdateTool() {
         this(new ZookeeperUpdaterLocker());
     }
@@ -44,6 +49,10 @@ public class UpdaterUpdateTool extends BaseUpdaterTableTool {
 
         if (bootstrapFlag != null && !bootstrapFlag.isEmpty()) {
             bootstrap = Boolean.parseBoolean(bootstrapFlag);
+        }
+
+        if (setLayoutIdFlag != null && !setLayoutIdFlag.isEmpty()) {
+            setLayoutId = Boolean.parseBoolean(setLayoutIdFlag);
         }
     }
 
@@ -65,13 +74,19 @@ public class UpdaterUpdateTool extends BaseUpdaterTableTool {
         getPrintStream().println("Updating table '" + getKijiTableName() + "'.");
         TableUpdater.UpdateResult result = updater.updateTable(getKijiTableName(),
                 updateLoader.loadUpdates(getKijiTableName()), bootstrap);
+
         if (result.wasBootstrapped()) {
             getPrintStream().println("Table '" + result.getTableName() + "' already exists in instance, but it is " +
-                    "not defined in " + LayoutUpdateTable.TABLE_NAME + ". Bootstrapping the table in '"
-                    + LayoutUpdateTable.TABLE_NAME + "' with the current layout as the initial layout with id 0.");
+                    "not defined in " + LayoutUpdateTable.TABLE_NAME + ". Bootstrapping the table '"
+                    + LayoutUpdateTable.TABLE_NAME + "' with the current layout as the initial layout.");
         }
+
         getPrintStream().println("Applied " + result.getNumberOfUpdatesApplied()
                 + " updates to table '" + result.getTableName() + "'.");
+
+        if (setLayoutId) {
+            setLayoutIdAfterUpdate(result);
+        }
         return SUCCESS;
     }
 

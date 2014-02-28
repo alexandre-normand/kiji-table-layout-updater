@@ -76,7 +76,7 @@ public class TableUpdater extends TableOperator {
             }
         }
 
-        return new UpdateResult(tableName, wasBootstrapped, updatesToApply.size());
+        return new UpdateResult(tableName, wasBootstrapped, updatesToApply.size(), updates.last().getId());
     }
 
     private void bootstrapExistingTableInLayoutUpdateTable(String tableName) throws IOException {
@@ -97,11 +97,14 @@ public class TableUpdater extends TableOperator {
         private final String tableName;
         private final boolean wasBootstrapped;
         private final Integer numberOfUpdatesApplied;
+        private final Integer idOfTheLastUpdateApplied;
 
-        public UpdateResult(String tableName, boolean wasBootstrapped, Integer numberOfUpdatesApplied) {
+        public UpdateResult(String tableName, boolean wasBootstrapped, Integer numberOfUpdatesApplied,
+                            Integer idOfTheLastUpdateApplied) {
             this.tableName = tableName;
             this.wasBootstrapped = wasBootstrapped;
             this.numberOfUpdatesApplied = numberOfUpdatesApplied;
+            this.idOfTheLastUpdateApplied = idOfTheLastUpdateApplied;
         }
 
         /**
@@ -123,6 +126,10 @@ public class TableUpdater extends TableOperator {
          */
         public Integer getNumberOfUpdatesApplied() {
             return numberOfUpdatesApplied;
+        }
+
+        public Integer getIdOfTheLastUpdateApplied() {
+            return idOfTheLastUpdateApplied;
         }
     }
 }

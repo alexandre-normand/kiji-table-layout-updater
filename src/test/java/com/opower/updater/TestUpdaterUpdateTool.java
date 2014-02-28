@@ -18,6 +18,9 @@ import java.util.Map;
 
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertTrue;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
+import static org.junit.Assert.assertThat;
 
 /**
  * Tests for {@link com.opower.updater.UpdaterUpdateTool}.
@@ -83,6 +86,25 @@ public class TestUpdaterUpdateTool extends UpdaterToolTest {
         assertEquals(BaseTool.SUCCESS, runTool(updateTool(), "--table=" + tableURI));
 
         assertTestTableComplete();
+    }
+
+    @Test
+    public void testLayoutIdIsSetAfterCreate() throws Exception {
+        createTestTable();
+
+        assertEquals(BaseTool.SUCCESS, runTool(updateTool(), "--table=" + tableURI, "--set-layout-id=true"));
+
+        assertEquals("test-layout-id-2", getKiji().getMetaTable().getTableLayout(tableURI.getTable()).getDesc().getLayoutId());
+    }
+
+    @Test
+    public void testLayoutIdIsNotSetAfterCreateIfFlagTurnedOff() throws Exception {
+        createTestTable();
+
+        assertEquals(BaseTool.SUCCESS, runTool(updateTool(), "--table=" + tableURI, "--set-layout-id=false"));
+
+        assertThat("test-layout-id-2",
+                not(equalTo(getKiji().getMetaTable().getTableLayout(tableURI.getTable()).getDesc().getLayoutId())));
     }
 
     private void createTestTable() throws IOException {

@@ -37,6 +37,11 @@ public class UpdaterCreateTool extends BaseUpdaterTableTool {
     private String mNumRegionsFlag = null;
     private int mNumRegions = 1;
 
+    @Flag(name = "set-layout-id", usage = "Use this option to have the tool set the table layout-id to the last" +
+            "update id or not after a successful kiji-table-updater run. The default is 'true'.")
+    private String setLayoutIdFlag = null;
+    private Boolean setLayoutId = true;
+
     public UpdaterCreateTool() {
         this(new ZookeeperUpdaterLocker());
     }
@@ -57,6 +62,10 @@ public class UpdaterCreateTool extends BaseUpdaterTableTool {
             mNumRegions = Integer.parseInt(mNumRegionsFlag);
             Preconditions.checkArgument(mNumRegions >= 1,
                     "Invalid initial number of regions {}, must be >= 1.", mNumRegions);
+        }
+
+        if (setLayoutIdFlag != null && !setLayoutIdFlag.isEmpty()) {
+            setLayoutId = Boolean.parseBoolean(setLayoutIdFlag);
         }
     }
 
@@ -81,7 +90,12 @@ public class UpdaterCreateTool extends BaseUpdaterTableTool {
         creator.createTable(getKijiTableName(), updateLoader.loadCreateTable(getKijiTableName()));
 
         getPrintStream().println("Updating table " + getKijiTableName());
-        updater.updateTable(getKijiTableName(), updateLoader.loadUpdates(getKijiTableName()), false);
+        TableUpdater.UpdateResult updateResult =
+                updater.updateTable(getKijiTableName(), updateLoader.loadUpdates(getKijiTableName()), false);
+
+        if(setLayoutId) {
+            setLayoutIdAfterUpdate(updateResult);
+        }
 
         return SUCCESS;
     }
