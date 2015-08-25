@@ -1,17 +1,18 @@
 package com.opower.updater.admin.loader;
 
 import com.opower.updater.admin.Update;
-import org.reflections.Reflections;
-import org.reflections.scanners.ResourcesScanner;
+import io.github.lukehutch.fastclasspathscanner.FastClasspathScanner;
+import io.github.lukehutch.fastclasspathscanner.matchprocessor.FileMatchProcessor;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 
 /**
  * Update loader that loads updates from resources in the classpath. This class needs to be extended to provide the
@@ -72,25 +73,32 @@ public abstract class ResourceUpdateLoader implements UpdateLoader {
      */
     @Override
     public SortedSet<Update> loadUpdates(String tableName) throws IOException, TableUpdatesNotFoundException {
-        Reflections reflections = new Reflections(packagePrefix + tableName, new ResourcesScanner());
-        Set<String> resources = reflections.getResources(Pattern.compile(buildUpdateFilePattern(tableName)));
+        final SortedSet<Update> updates = new TreeSet<Update>(Update.UPDATE_COMPARATOR);
+        final Set<String> ddls = new HashSet<String>();
 
-        if (resources.isEmpty()) {
+        FastClasspathScanner fastClasspathScanner = new FastClasspathScanner(packagePrefix + tableName);
+        fastClasspathScanner.matchFilenameExtension(
+                "ddl", new FileMatchProcessor() {
+                    @Override
+                    public void processMatch(String relativePath, InputStream inputStream, int lengthBytes) throws IOException {
+                        ddls.add(relativePath);
+                        int id = extractIdFromFileName(new File(relativePath).getName());
+                        BufferedReader reader =
+                                new BufferedReader(new InputStreamReader(inputStream));
+
+                        String line;
+                        StringBuilder ddl = new StringBuilder();
+                        while ((line = reader.readLine()) != null) {
+                            ddl.append(line).append("\n");
+                        }
+                        updates.add(new Update(id, ddl.toString()));
+                    }
+
+                });
+        fastClasspathScanner.scan();
+
+        if (ddls.isEmpty()) {
             throw new TableUpdatesNotFoundException(tableName);
-        }
-
-        SortedSet<Update> updates = new TreeSet<Update>(Update.UPDATE_COMPARATOR);
-        for (String resource : resources) {
-            int id = extractIdFromFileName(new File(resource).getName());
-            BufferedReader reader =
-                    new BufferedReader(new InputStreamReader(ClassLoader.getSystemResourceAsStream(resource)));
-
-            String line;
-            StringBuilder ddl = new StringBuilder();
-            while ((line = reader.readLine()) != null) {
-                ddl.append(line).append("\n");
-            }
-            updates.add(new Update(id, ddl.toString()));
         }
 
         return updates;

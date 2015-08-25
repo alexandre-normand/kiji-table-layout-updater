@@ -11,6 +11,7 @@ WITH LOCALITY GROUP default WITH DESCRIPTION 'Main locality group.' (
   MAXVERSIONS = INFINITY,
   TTL = FOREVER,
   INMEMORY = false,
+  COMPRESSED WITH %%%compression%%%,
   FAMILY test WITH DESCRIPTION 'Test record.' (
     stuff WITH SCHEMA ID 0
   )
