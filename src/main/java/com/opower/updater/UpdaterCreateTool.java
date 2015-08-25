@@ -1,6 +1,7 @@
 package com.opower.updater;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.opower.updater.admin.loader.DDLTokenReplacer;
 import com.opower.updater.admin.loader.ResourceUpdateLoader;
@@ -11,10 +12,16 @@ import com.opower.updater.operation.TableCreator;
 import com.opower.updater.operation.TableDDLGenerator;
 import com.opower.updater.operation.TableUpdater;
 import org.kiji.common.flags.Flag;
+import org.kiji.schema.avro.CompressionType;
+import org.kiji.schema.shell.ddl.CompressionTypeToken;
 import org.kiji.schema.tools.KijiToolLauncher;
+import scala.Enumeration;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
+
+import static java.lang.String.format;
 
 /**
  * Create Tool. This tool creates new kiji tables and apply all the currently known updates.
@@ -26,6 +33,7 @@ import java.util.Map;
  */
 public class UpdaterCreateTool extends BaseUpdaterTableTool {
     public static final String NUM_REGIONS_TOKEN = "num_regions";
+    public static final String COMPRESSION_TOKEN = "compression";
 
     @Flag(name = "table", usage = "URI of the Kiji table to create," +
             " eg. --table=kiji://hbase-address/kiji-instance/table.")
@@ -36,6 +44,13 @@ public class UpdaterCreateTool extends BaseUpdaterTableTool {
                     "Regions are evenly sized across the HBase row key space.\n")
     private String mNumRegionsFlag = null;
     private int mNumRegions = 1;
+
+    @Flag(name = "compression",
+            usage = "Compression type to use to create the table (one of NONE, LZO, GZ, SNAPPY). " +
+                    "Only effective if the table creation DDL contains a \"COMPRESSED WITH %%%compression%%%\" line. " +
+                    "Defaults to NONE.\n")
+    private String mCompressionFlag = null;
+    private Enumeration.Value mCompression = CompressionTypeToken.NONE();
 
     @Flag(name = "set-layout-id", usage = "Use this option to have the tool set the table layout-id to the last" +
             "update id or not after a successful kiji-table-updater run. The default is 'true'.")
@@ -62,6 +77,16 @@ public class UpdaterCreateTool extends BaseUpdaterTableTool {
             mNumRegions = Integer.parseInt(mNumRegionsFlag);
             Preconditions.checkArgument(mNumRegions >= 1,
                     "Invalid initial number of regions {}, must be >= 1.", mNumRegions);
+        }
+
+        if ((mCompressionFlag != null) && !mCompressionFlag.isEmpty()) {
+            try {
+                mCompression = CompressionTypeToken.withName(mCompressionFlag.toUpperCase());
+            }
+            catch(NoSuchElementException e) {
+                throw new IllegalArgumentException(format("Invalid compression type [%s], must be one of [%s]",
+                        mCompressionFlag, Joiner.on(", ").join(CompressionType.values())));
+            }
         }
 
         if (setLayoutIdFlag != null && !setLayoutIdFlag.isEmpty()) {
@@ -107,6 +132,7 @@ public class UpdaterCreateTool extends BaseUpdaterTableTool {
     protected UpdateLoader createUpdateLoader() {
         Map<String, String> tokenMap = new HashMap<String, String>(1);
         tokenMap.put(NUM_REGIONS_TOKEN, Integer.toString(mNumRegions));
+        tokenMap.put(COMPRESSION_TOKEN, mCompression.toString());
         return new UpdateLoaderWithPreProcessor(ResourceUpdateLoader.DEFAULT, new DDLTokenReplacer(tokenMap));
     }
 

@@ -40,10 +40,17 @@ public class TestUpdaterUpdateTool extends UpdaterToolTest {
         Client client = Client.newInstance(getKiji().getURI());
         client.executeUpdate(loader.loadCreateTable(TABLE_NAME)
                 .getDDL()
-                .replaceAll(DDLTokenReplacer.TOKEN_DELIMITER
-                        + UpdaterCreateTool.NUM_REGIONS_TOKEN
-                        + DDLTokenReplacer.TOKEN_DELIMITER,
-                        "1"));
+                .replaceAll(
+                        DDLTokenReplacer.TOKEN_DELIMITER
+                                + UpdaterCreateTool.NUM_REGIONS_TOKEN
+                                + DDLTokenReplacer.TOKEN_DELIMITER,
+                        "1")
+                .replaceAll(
+                        DDLTokenReplacer.TOKEN_DELIMITER
+                                + UpdaterCreateTool.COMPRESSION_TOKEN
+                                + DDLTokenReplacer.TOKEN_DELIMITER,
+                        "NONE")
+        );
 
         assertEquals(BaseTool.FAILURE, runTool(updateTool(), "--table=" + tableURI));
         checkLastPrintedLineIsAnError();
@@ -59,7 +66,11 @@ public class TestUpdaterUpdateTool extends UpdaterToolTest {
                 .replaceAll(DDLTokenReplacer.TOKEN_DELIMITER
                         + UpdaterCreateTool.NUM_REGIONS_TOKEN
                         + DDLTokenReplacer.TOKEN_DELIMITER,
-                        "1");
+                        "1")
+                .replaceAll(DDLTokenReplacer.TOKEN_DELIMITER
+                        + UpdaterCreateTool.COMPRESSION_TOKEN
+                        + DDLTokenReplacer.TOKEN_DELIMITER,
+                        "NONE");
 
         Client client = Client.newInstance(getKiji().getURI());
         client.executeUpdate(createDDL);
@@ -114,6 +125,7 @@ public class TestUpdaterUpdateTool extends UpdaterToolTest {
 
         Map<String, String> tokenMap = new HashMap<String, String>(1);
         tokenMap.put(UpdaterCreateTool.NUM_REGIONS_TOKEN, "1");
+        tokenMap.put(UpdaterCreateTool.COMPRESSION_TOKEN, "GZIP");
 
         DDLTokenReplacer tokenReplacer = new DDLTokenReplacer(tokenMap);
 
